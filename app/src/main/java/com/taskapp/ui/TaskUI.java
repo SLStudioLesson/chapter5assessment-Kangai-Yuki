@@ -3,6 +3,7 @@ package com.taskapp.ui;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import com.taskapp.logic.TaskLogic;
 import com.taskapp.logic.UserLogic;
@@ -45,7 +46,7 @@ public class TaskUI {
      */
     public void displayMenu() {
         System.out.println("タスク管理アプリケーションにようこそ!!");
-
+        inputLogin();
         // メインメニュー
         boolean flg = true;
         while (flg) {
@@ -59,8 +60,10 @@ public class TaskUI {
 
                 switch (selectMenu) {
                     case "1":
+                    taskLogic.showAll(loginUser);
                         break;
                     case "2":
+                    inputNewInformation();
                         break;
                     case "3":
                         System.out.println("ログアウトしました。");
@@ -82,8 +85,26 @@ public class TaskUI {
      *
      * @see com.taskapp.logic.UserLogic#login(String, String)
      */
-    // public void inputLogin() {
-    // }
+    public void inputLogin() {
+        while (true) {
+            try {
+                System.out.print("メールアドレスを入力してください：");
+                String email = reader.readLine();
+                System.out.print("パスワードを入力してください：");
+                String password = reader.readLine();
+
+                loginUser = userLogic.login(email, password);
+                System.out.println("ユーザー名：" + loginUser.getName() + "でログインしました。");
+                break; // ログイン成功でループを抜ける
+            } catch (IOException e) {
+            System.out.println("入力エラーが発生しました。もう一度試してください。");
+        } catch (Exception e) { // 例外処理を一般化
+            System.out.println("ログインに失敗しました。メールアドレスまたはパスワードを確認してください。");
+        }
+        }
+    }
+
+
 
     /**
      * ユーザーからの新規タスク情報を受け取り、新規タスクを登録します。
@@ -91,9 +112,53 @@ public class TaskUI {
      * @see #isNumeric(String)
      * @see com.taskapp.logic.TaskLogic#save(int, String, int, User)
      */
-    // public void inputNewInformation() {
-    // }
-
+    public void inputNewInformation() {
+        int taskCode = 0;
+        String taskName = "";
+        int repUserCode = 0;
+    
+        List<Integer> validUserCodes = List.of(1, 2);
+    
+        while (true) {
+            try {
+                System.out.print("タスクコードを入力してください：");
+                String codeInput = reader.readLine();
+                if (codeInput.isEmpty() || !codeInput.matches("\\d+")) {
+                    System.out.println("コードは半角の数字で入力してください");
+                    continue;
+                }
+                taskCode = Integer.parseInt(codeInput);
+    
+                System.out.print("タスク名を入力してください：");
+                taskName = reader.readLine();
+                // 修正：タスク名の長さをチェック
+                if (taskName.isEmpty() || taskName.length() > 10) {
+                    System.out.println("タスク名は1文字以上10文字以内で入力してください");
+                    continue;
+                }
+    
+                System.out.print("担当するユーザーのコードを選択してください：");
+                String userCodeInput = reader.readLine();
+                if (userCodeInput.isEmpty() || !userCodeInput.matches("\\d+")) {
+                    System.out.println("ユーザーのコードは半角の数字で入力してください");
+                    continue;
+                }
+                repUserCode = Integer.parseInt(userCodeInput);
+    
+                if (!validUserCodes.contains(repUserCode)) {
+                    System.out.println("存在するユーザーコードを入力してください");
+                }
+    
+                taskLogic.save(taskCode, taskName, repUserCode, loginUser);
+                System.out.printf("%sの登録が完了しました。%n", taskName);
+                break;
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     /**
      * タスクのステータス変更または削除を選択するサブメニューを表示します。
      *
@@ -109,8 +174,13 @@ public class TaskUI {
      * @see #isNumeric(String)
      * @see com.taskapp.logic.TaskLogic#changeStatus(int, int, User)
      */
-    // public void inputChangeInformation() {
-    // }
+    public boolean isNumeric(String inputText) {
+        if (inputText == null || inputText.isEmpty()) {
+            return false;
+        }
+        return inputText.chars().allMatch(Character::isDigit);
+    }
+
 
     /**
      * ユーザーからのタスク削除情報を受け取り、タスクを削除します。
