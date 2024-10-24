@@ -44,7 +44,7 @@ public class TaskLogic {
      * @param loginUser ログインユーザー
      */
     public void showAll(User loginUser) {
-        List<Task> tasks = taskDataAccess.findAll(); // すべてのタスクを取得
+        List<Task> tasks = taskDataAccess.findAll();
 
         int index = 1;
         for (Task task : tasks) {
@@ -86,12 +86,11 @@ public class TaskLogic {
      * @param loginUser ログインユーザー
      * @throws AppException ユーザーコードが存在しない場合にスローされます
      */
-    public void save(int code, String name, int repUserCode, User loginUser) {
-    User repUser = userDataAccess.findByCode(repUserCode);
-    if (repUser == null) {
-        System.out.println("存在するユーザーコードを入力してください");
-        return; // エラーメッセージを表示し、処理を終了
-    }
+    public void save(int code, String name, int repUserCode, User loginUser) throws AppException {
+        User repUser = userDataAccess.findByCode(repUserCode);
+        if (repUser == null) {
+            throw new AppException("存在するユーザーコードを入力してください"); // エラーメッセージを修正
+        }
         
         Task newTask = new Task(code, name, 0, repUser);
         taskDataAccess.save(newTask); // データアクセス層に保存
@@ -111,9 +110,25 @@ public class TaskLogic {
      * @param loginUser ログインユーザー
      * @throws AppException タスクコードが存在しない、またはステータスが前のステータスより1つ先でない場合にスローされます
      */
-    // public void changeStatus(int code, int status,
-    //                         User loginUser) throws AppException {
-    // }
+    public void changeStatus(int code, int status, User loginUser) throws AppException {
+        Task task = taskDataAccess.findByCode(code); 
+        if (task == null) {
+            throw new AppException("存在するタスクコードを入力してください");
+        }
+    
+        // ステータスの変更チェック
+        if ((task.getStatus() == 0 && status != 1) || (task.getStatus() == 1 && status != 2)) {
+            throw new AppException("ステータスは、前のステータスより1つ先のもののみを選択してください");
+        }
+    
+        // ステータス変更処理
+        task.setStatus(status);
+        taskDataAccess.update(task);
+    
+        // ログの保存
+        logDataAccess.save(new Log(code, loginUser.getCode(), status, LocalDate.now()));
+    }
+
 
     /**
      * タスクを削除します。
